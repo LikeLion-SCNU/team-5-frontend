@@ -41,7 +41,7 @@
 | 브랜치 | 환경 | 주소 |
 |---|---|---|
 | `develop` | 개발 | http://1.201.116.27:8080 |
-| `main` | 운영(심사 제출 URL) | **https://1.201.116.27.nip.io** |
+| `main` | 운영(심사 제출 URL) | **https://timebank.hbinserver.cloud** |
 
 ### 개발 규칙
 1. **`main` 직접 push 금지** — develop → main PR로만
