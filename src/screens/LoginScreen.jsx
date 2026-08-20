@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import useGoBack from '../hooks/useGoBack'
 import AlertModal from '../components/AlertModal'
+import { login } from '../api/auth'
+import { ApiError } from '../api/client'
 
 const fieldLabel = { position: 'absolute', left: 24, fontSize: 14, fontWeight: 600, color: 'var(--ink)' }
 const inputBox = {
@@ -23,13 +25,14 @@ const inputBox = {
 /** 로그인 */
 export default function LoginScreen() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('jeongys@gmail.com')
-  const [pw, setPw] = useState('naeilbank1234')
+  const [email, setEmail] = useState('')
+  const [pw, setPw] = useState('')
 
   const [alert, setAlert] = useState('')
+  const [busy, setBusy] = useState(false)
   const goBack = useGoBack('/start')
 
-  const submit = () => {
+  const submit = async () => {
     // 아이디(이메일)·비밀번호는 필수 입력
     if (!email.trim() || !pw.trim()) {
       setAlert('이메일과 비밀번호는\n필수 입력 항목입니다.')
@@ -40,7 +43,21 @@ export default function LoginScreen() {
       navigate('/login/error')
       return
     }
-    navigate('/onboarding')
+    if (busy) return
+    setBusy(true)
+    try {
+      await login(email.trim(), pw)
+      navigate('/onboarding')
+    } catch (e) {
+      // 자격 증명 오류는 로그인 오류 화면으로, 그 외(네트워크 등)는 알림으로
+      if (e instanceof ApiError && (e.status === 401 || e.status === 400)) {
+        navigate('/login/error')
+      } else {
+        setAlert(e.message || '로그인에 실패했어요.\n잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

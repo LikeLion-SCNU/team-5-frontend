@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import useGoBack from '../hooks/useGoBack'
 import AlertModal from '../components/AlertModal'
+import { join, login } from '../api/auth'
+import { ApiError } from '../api/client'
 
 const fieldLabel = {
   position: 'absolute',
@@ -36,8 +38,10 @@ export default function SignUpScreen() {
   const [alert, setAlert] = useState('')
   const goBack = useGoBack('/start')
 
+  const [busy, setBusy] = useState(false)
+
   /** 아이디(이메일)·비밀번호는 필수 입력 */
-  const submit = () => {
+  const submit = async () => {
     if (!email.trim() || !pw.trim() || !pw2.trim()) {
       setAlert('이메일과 비밀번호는\n필수 입력 항목입니다.')
       return
@@ -54,7 +58,21 @@ export default function SignUpScreen() {
       setAlert('비밀번호가 일치하지 않습니다.')
       return
     }
-    navigate('/privacy')
+    if (busy) return
+    setBusy(true)
+    try {
+      await join(email.trim(), pw)
+      await login(email.trim(), pw)
+      navigate('/privacy')
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        setAlert('이미 가입된 이메일입니다.\n로그인해주세요.')
+      } else {
+        setAlert(e.message || '가입에 실패했어요.\n잠시 후 다시 시도해주세요.')
+      }
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

@@ -1,7 +1,24 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { IconAward, IconCalendar } from '../components/Icons'
 import { useApp } from '../state/AppContext'
+import { getStatements } from '../api/ledger'
+import { isLoggedIn } from '../api/client'
+
+const HABIT_TAG = { sleep: '수면', activity: '운동', screen_time: '스크린', food: '식사', alcohol: '음주' }
+
+/** 분 → '+1.2h' 형태 */
+function fmtDelta(minutes) {
+  const h = Math.abs(minutes) / 60
+  const text = h >= 10 ? Math.round(h).toString() : h.toFixed(1)
+  return `${minutes < 0 ? '-' : '+'}${text}h`
+}
+
+/** '2026.08.20' → '2026-08-20' */
+function toIso(dotDate) {
+  return String(dotDate).replaceAll('.', '-')
+}
 
 /** 영수증 상하단 톱니(18칸) */
 function Zigzag({ dir }) {
@@ -33,6 +50,28 @@ const BARS = [
 export default function ReceiptScreen() {
   const navigate = useNavigate()
   const { ledger, userName, selectedDate, displayDelta, protectionMode } = useApp()
+
+  /* 실서비스 명세서 — 선택한 날짜의 원장 라인을 불러오고, 없거나 실패하면 예시 값 유지 */
+  const [day, setDay] = useState(null)
+  useEffect(() => {
+    if (!isLoggedIn()) return
+    const iso = toIso(selectedDate)
+    getStatements(iso, iso)
+      .then((res) => setDay(res?.days?.[0] ?? null))
+      .catch(() => setDay(null))
+  }, [selectedDate])
+
+  const rows = day
+    ? day.lines.map((ln) => ({
+        id: ln.entryId,
+        tag: HABIT_TAG[ln.habitType] ?? ln.habitType,
+        title: ln.displayText,
+        delta: fmtDelta(ln.minutesDelta),
+        sign: ln.minutesDelta < 0 ? -1 : 1,
+      }))
+    : ledger
+  const totalText = day ? fmtDelta(day.dailyNetMinutes) : '+0.4h'
+  const totalPlus = day ? day.dailyNetMinutes >= 0 : true
 
   return (
     <div className="screen">
@@ -132,7 +171,7 @@ export default function ReceiptScreen() {
 
           {/* 원장 항목 — 금액 칸이 두 줄이 되면 행 전체가 같이 늘어나고 내용은 세로 가운데 정렬 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 40 }}>
-            {ledger.map((row) => {
+            {rows.map((row) => {
               const plus = row.sign > 0 || protectionMode
               return (
                 <button
@@ -197,7 +236,9 @@ export default function ReceiptScreen() {
           {/* 합계 */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
             <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>일일 순수익 합계</span>
-            <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--green)' }}>+0.4h</span>
+            <span style={{ fontSize: 18, fontWeight: 900, color: totalPlus || protectionMode ? 'var(--green)' : 'var(--red)' }}>
+              {displayDelta(totalText)}
+            </span>
           </div>
 
           {/* 인증 뱃지 — 누르면 근거 논문 출처 화면 */}

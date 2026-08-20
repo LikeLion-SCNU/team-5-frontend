@@ -1,7 +1,18 @@
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
 import { IconBell, IconMoon, IconFootsteps, IconSmartphone, IconTrendUp, IconCheck } from '../components/Icons'
 import { useApp } from '../state/AppContext'
+import { getBalance } from '../api/ledger'
+import { me } from '../api/auth'
+import { isLoggedIn } from '../api/client'
+
+/** 분 단위 잔고를 "+ 12,540 시간" 형태로 */
+function fmtBalance(minutes) {
+  const hours = Math.abs(minutes) / 60
+  const text = hours.toLocaleString('ko-KR', { maximumFractionDigits: 1 })
+  return `${minutes < 0 ? '- ' : '+ '}${text} 시간`
+}
 
 const STATS = [
   { key: 'sleep', name: '수면', value: '7.2h', Icon: IconMoon, left: 24, fill: 68, color: 'var(--brown)' },
@@ -14,6 +25,15 @@ export default function HomeScreen() {
   const navigate = useNavigate()
   const { userName, homeMissions, setHomeMissions, hasData, unreadCount } = useApp()
 
+  /* 실서비스 데이터 — 로그인돼 있으면 잔고·사용자명을 불러오고, 실패하면 예시 값 유지 */
+  const [balance, setBalance] = useState(null)
+  const [displayName, setDisplayName] = useState(null)
+  useEffect(() => {
+    if (!isLoggedIn()) return
+    getBalance().then(setBalance).catch(() => {})
+    me().then((u) => setDisplayName(u?.email?.split('@')[0] ?? null)).catch(() => {})
+  }, [])
+
   // 데이터가 초기화된 상태면 빈 홈화면
   if (!hasData) return <Navigate to="/home-empty" replace />
 
@@ -23,7 +43,7 @@ export default function HomeScreen() {
       {/* 헤더 */}
       <div style={{ position: 'absolute', top: 44, left: 0, width: 393, height: 56 }}>
         <span style={{ position: 'absolute', top: 16, left: 109, width: 175, fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>
-          {userName}님, 안녕하세요
+          {displayName ?? userName}님, 안녕하세요
         </span>
         <button
           className="pressable"
@@ -59,7 +79,7 @@ export default function HomeScreen() {
           누적 수명 잔고
         </span>
         <span style={{ position: 'absolute', top: 46, left: 24, width: 249, fontSize: 38, fontWeight: 900, color: 'var(--ink)' }}>
-          + 12,540 시간
+          {balance ? fmtBalance(balance.balanceMinutes) : '+ 12,540 시간'}
         </span>
 
         <div
@@ -78,7 +98,13 @@ export default function HomeScreen() {
           }}
         >
           <IconTrendUp size={14} color="#4A7C59" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>2.1% 어제보다 2시간 증가</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>
+            {balance
+              ? (balance.previousDayDeltaMinutes === 0
+                  ? '어제와 같은 잔고예요'
+                  : `어제보다 ${Math.abs(balance.previousDayDeltaMinutes / 60).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}시간 ${balance.previousDayDeltaMinutes > 0 ? '증가' : '감소'}`)
+              : '2.1% 어제보다 2시간 증가'}
+          </span>
         </div>
       </div>
 
