@@ -78,9 +78,9 @@ async function refreshTokens() {
  * @param {string} path  /auth/login 처럼 /api/v1 뒤 경로
  * @param {object} opts  { method, body(JSON 객체), form(FormData), auth(기본 true) }
  */
-export async function api(path, { method = 'GET', body, form, auth = true } = {}) {
+export async function api(path, { method = 'GET', body, form, auth = true, headers: extraHeaders } = {}) {
   const doFetch = async () => {
-    const headers = {}
+    const headers = { ...extraHeaders }
     if (auth && getAccessToken()) headers.Authorization = `Bearer ${getAccessToken()}`
     if (body !== undefined) headers['Content-Type'] = 'application/json'
     return fetch(`${BASE}${path}`, {

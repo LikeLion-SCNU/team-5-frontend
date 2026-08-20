@@ -1,12 +1,28 @@
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { useEffect } from 'react'
 import Toggle from '../components/Toggle'
+import { getProtectionStatus, setProtectionMode as apiSetProtectionMode } from '../api/protection'
+import { isLoggedIn } from '../api/client'
 import { useApp } from '../state/AppContext'
 
 /** 설정 - 보호 모드 */
 export default function SettingsProtectionScreen() {
   const navigate = useNavigate()
   const { protectionMode, setProtectionMode } = useApp()
+
+  /* 서버 보호 모드 상태와 동기화 */
+  useEffect(() => {
+    if (!isLoggedIn()) return
+    getProtectionStatus()
+      .then((st) => setProtectionMode(!!st.protectionMode))
+      .catch(() => {})
+  }, [setProtectionMode])
+
+  const toggle = (v) => {
+    setProtectionMode(v) // 화면은 즉시 반영
+    if (isLoggedIn()) apiSetProtectionMode(v).catch(() => {})
+  }
 
   return (
     <div className="screen">
@@ -31,7 +47,7 @@ export default function SettingsProtectionScreen() {
           보호 모드 활성화
         </span>
         <div style={{ position: 'absolute', top: 63, left: 147 }}>
-          <Toggle on={protectionMode} onChange={setProtectionMode} />
+          <Toggle on={protectionMode} onChange={toggle} />
         </div>
       </div>
 
