@@ -1,19 +1,64 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import AlertModal from '../components/AlertModal'
 import { IconCheck } from '../components/Icons'
 import { useApp } from '../state/AppContext'
+import { getDataSummary, deleteDataScopes } from '../api/account'
 
-const ROWS = [
-  { key: 'meal', label: '식사 기록', size: '1.4MB' },
-  { key: 'sleep', label: '수면 데이터', size: '3.2MB' },
-  { key: 'steps', label: '걸음 데이터', size: '0.8MB' },
-  { key: 'sim', label: '시뮬레이션 결과', size: '12.5MB' },
-]
+const formatSize = (bytes, items) => {
+  if (bytes > 0) {
+    const mb = bytes / (1024 * 1024)
+    return mb >= 0.1 ? `${mb.toFixed(1)}MB` : `${Math.max(Math.round(bytes / 1024), 1)}KB`
+  }
+  return `${items}건`
+}
 
-/** 설정 - 데이터 관리 */
+/** 설정 - 데이터 관리 (실제 저장량 조회·삭제) */
 export default function SettingsDataManageScreen() {
   const navigate = useNavigate()
   const { dataChecks, setDataChecks } = useApp()
+  const [rows, setRows] = useState([])
+  const [alert, setAlert] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const load = () =>
+    getDataSummary()
+      .then((d) =>
+        setRows(
+          (d?.categories ?? []).map((c) => ({
+            key: c.key,
+            label: c.label,
+            size: formatSize(c.bytes, c.items),
+            items: c.items,
+          })),
+        ),
+      )
+      .catch(() => setRows([]))
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  const removeSelected = async () => {
+    const scopes = rows.filter((r) => dataChecks[r.key]).map((r) => r.key)
+    if (!scopes.length) {
+      setAlert('삭제할 항목을 선택해주세요.')
+      return
+    }
+    if (busy) return
+    setBusy(true)
+    try {
+      const res = await deleteDataScopes(scopes)
+      await load()
+      setDataChecks({})
+      setAlert(res?.message || '선택한 데이터를 삭제했습니다.')
+    } catch (e) {
+      setAlert(e.message || '삭제에 실패했어요.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="screen">
@@ -38,7 +83,12 @@ export default function SettingsDataManageScreen() {
           overflow: 'hidden',
         }}
       >
-        {ROWS.map(({ key, label, size }, i) => {
+        {rows.length === 0 && (
+          <div style={{ position: 'absolute', top: 24, left: 0, width: 345, textAlign: 'center', fontSize: 14, color: 'var(--muted)' }}>
+            저장된 데이터를 불러오는 중입니다.
+          </div>
+        )}
+        {rows.map(({ key, label, size, items }, i) => {
           const on = dataChecks[key]
           return (
             <div key={key} style={{ position: 'absolute', top: i * 62, left: 0, width: 345, height: 62 }}>
@@ -79,16 +129,38 @@ export default function SettingsDataManageScreen() {
                     color: 'var(--muted)',
                   }}
                 >
-                  {size}
+                  {items === 0 ? '없음' : size}
                 </span>
               </button>
-              {i < ROWS.length - 1 && (
+              {i < rows.length - 1 && (
                 <div style={{ position: 'absolute', top: 61, left: 20, width: 305, height: 1, background: 'var(--beige-2)' }} />
               )}
             </div>
           )
         })}
       </div>
+
+      <button
+        className="pressable"
+        onClick={removeSelected}
+        style={{
+          position: 'absolute',
+          top: 655,
+          left: 24,
+          width: 345,
+          height: 52,
+          borderRadius: 16,
+          background: 'var(--white)',
+          border: '1px solid var(--beige-2)',
+          color: 'var(--ink)',
+          fontSize: 15,
+          fontWeight: 700,
+        }}
+      >
+        선택 항목 삭제
+      </button>
+
+      <AlertModal open={!!alert} message={alert} onClose={() => setAlert('')} />
 
       <button
         className="pressable"
