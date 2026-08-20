@@ -5,6 +5,7 @@ import useGoBack from '../hooks/useGoBack'
 import AlertModal from '../components/AlertModal'
 import { login } from '../api/auth'
 import { ApiError } from '../api/client'
+import { holdPassword } from '../state/pendingCredential'
 
 const fieldLabel = { position: 'absolute', left: 24, fontSize: 14, fontWeight: 600, color: 'var(--ink)' }
 const inputBox = {
@@ -51,7 +52,8 @@ export default function LoginScreen() {
     } catch (e) {
       // 미인증 계정은 인증 화면으로 안내
       if (e instanceof ApiError && e.code === 'EMAIL_NOT_VERIFIED') {
-        navigate('/verify-email', { state: { email: email.trim(), password: pw } })
+        holdPassword(pw)
+        navigate('/verify-email', { state: { email: email.trim() } })
         return
       }
       // 자격 증명 오류는 로그인 오류 화면으로, 그 외(네트워크 등)는 알림으로
