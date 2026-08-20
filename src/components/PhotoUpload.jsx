@@ -13,7 +13,7 @@ export default function PhotoUpload({ top = 168, photo, onPick, placeholder = '�
     const file = e.target.files?.[0]
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => onPick(String(reader.result))
+    reader.onload = () => onPick(String(reader.result), file)
     reader.readAsDataURL(file)
     e.target.value = '' // 같은 파일을 다시 골라도 동작하도록
   }

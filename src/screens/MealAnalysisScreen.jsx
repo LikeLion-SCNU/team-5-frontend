@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import useGoBack from '../hooks/useGoBack'
 import { IconChevronLeft, IconEdit, IconTrash } from '../components/Icons'
 import { useApp } from '../state/AppContext'
+import { waitForAnalysis, confirmMeal } from '../api/meals'
 
 const DOT_COLORS = ['var(--green)', 'var(--red)', 'var(--brown)']
 
@@ -10,12 +11,34 @@ const DOT_COLORS = ['var(--green)', 'var(--red)', 'var(--brown)']
 export default function MealAnalysisScreen() {
   const navigate = useNavigate()
   const goBack = useGoBack('/meal')
-  const { mealItems, setMealItems, setHasMealRecords, mealPhoto } = useApp()
+  const { mealItems, setMealItems, setHasMealRecords, mealPhoto, mealServerId } = useApp()
   const [editing, setEditing] = useState(null)
   const [draft, setDraft] = useState('')
   const [newName, setNewName] = useState('')
   const scrollRef = useRef(null)
   const addedRef = useRef(false)
+  const serverIdsRef = useRef([])
+  const [confirming, setConfirming] = useState(false)
+
+  /* 서버 분석이 진행 중이면 결과를 기다렸다가 항목을 실제 값으로 바꾼다 (실패 시 예시 값 유지) */
+  useEffect(() => {
+    if (!mealServerId) return
+    let alive = true
+    waitForAnalysis(mealServerId)
+      .then((meal) => {
+        if (!alive || !meal?.items?.length) return
+        serverIdsRef.current = meal.items.map((it) => it.id)
+        setMealItems(
+          meal.items
+            .filter((it) => !it.is_deleted)
+            .map((it) => ({ id: it.id, name: it.food_name, amount: it.portion || '', confidence: '', included: true })),
+        )
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [mealServerId, setMealItems])
 
   const remove = (id) => setMealItems(mealItems.filter((it) => it.id !== id))
 
@@ -44,7 +67,23 @@ export default function MealAnalysisScreen() {
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [mealItems.length])
 
-  const confirm = () => {
+  const confirm = async () => {
+    // 서버 기록이 있으면 확정 API로 원장에 기입한다 (제외·직접 추가 반영)
+    if (mealServerId && !confirming) {
+      setConfirming(true)
+      try {
+        const currentIds = new Set(mealItems.map((it) => it.id))
+        const excludeIds = serverIdsRef.current.filter((id) => !currentIds.has(id))
+        const userItems = mealItems
+          .filter((it) => !serverIdsRef.current.includes(it.id))
+          .map((it) => ({ food_name: it.name, portion: it.amount || undefined }))
+        await confirmMeal(mealServerId, excludeIds, userItems)
+      } catch {
+        // 확정 실패해도 화면 흐름은 이어간다 (데모 안정성)
+      } finally {
+        setConfirming(false)
+      }
+    }
     setHasMealRecords(true)
     navigate('/meal/records')
   }

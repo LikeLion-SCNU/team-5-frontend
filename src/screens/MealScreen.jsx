@@ -3,14 +3,28 @@ import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
 import PhotoUpload from '../components/PhotoUpload'
 import { useApp } from '../state/AppContext'
+import { uploadAndCreateMeal } from '../api/meals'
+import { isLoggedIn } from '../api/client'
+
+/** 오늘 날짜 YYYY-MM-DD */
+function today() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 /** 오늘의 식탁 기록 — 사진 업로드 */
 export default function MealScreen() {
   const navigate = useNavigate()
-  const { hasMealRecords, mealPhoto, setMealPhoto } = useApp()
+  const { hasMealRecords, mealPhoto, setMealPhoto, setMealServerId } = useApp()
 
-  const pick = (dataUrl) => {
+  const pick = (dataUrl, file) => {
     setMealPhoto(dataUrl)
+    setMealServerId(null)
+    // 로그인 상태면 서버에 업로드해 AI 분석을 시작한다 (실패해도 화면 흐름은 계속)
+    if (isLoggedIn() && file) {
+      uploadAndCreateMeal(file, today())
+        .then(({ mealId }) => setMealServerId(mealId))
+        .catch(() => {})
+    }
     navigate('/meal/analysis')
   }
 

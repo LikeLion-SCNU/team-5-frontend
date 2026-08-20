@@ -74,6 +74,8 @@ export function AppProvider({ children }) {
 
   /* 업로드한 사진 (식사 / 얼굴) — 업로드하면 그 사진이 화면에 그대로 보인다 */
   const [mealPhoto, setMealPhoto] = useState(null)
+  /* 서버에 생성된 식사 기록 id (실서비스 연동) */
+  const [mealServerId, setMealServerId] = useState(null)
   const [facePhoto, setFacePhoto] = useState(null)
 
   /* 홈 데이터 유무 */
@@ -160,6 +162,8 @@ export function AppProvider({ children }) {
       setMealItems,
       mealPhoto,
       setMealPhoto,
+      mealServerId,
+      setMealServerId,
       facePhoto,
       setFacePhoto,
       hasData,
@@ -184,7 +188,7 @@ export function AppProvider({ children }) {
     [
       userName, protectionMode, displayDelta,
       links, integrations, notify, planAccepted, missions, homeMissions, hasMealRecords, mealItems,
-      hasData, selectedDate, consents, dataChecks, faceSimDone, ledger, mealPhoto, facePhoto,
+      hasData, selectedDate, consents, dataChecks, faceSimDone, ledger, mealPhoto, facePhoto, mealServerId,
       notifications, unreadCount, markAllRead, markRead, clearNotifications,
       trackNav, popNav,
     ],
