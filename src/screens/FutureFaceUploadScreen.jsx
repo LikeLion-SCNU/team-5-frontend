@@ -9,7 +9,7 @@ import { useApp } from '../state/AppContext'
 /** 미래 얼굴 예측 — 사진 넣는 화면 ("오늘의 식탁 기록"과 같은 구성) */
 export default function FutureFaceUploadScreen() {
   const navigate = useNavigate()
-  const { facePhoto, setFacePhoto } = useApp()
+  const { facePhoto, setFacePhoto, setFaceFile } = useApp()
   const [alert, setAlert] = useState('')
 
   const start = () => {
@@ -28,7 +28,7 @@ export default function FutureFaceUploadScreen() {
         예측할 얼굴 사진을 촬영하거나 올려주세요
       </span>
 
-      <PhotoUpload top={168} photo={facePhoto} onPick={setFacePhoto} />
+      <PhotoUpload top={168} photo={facePhoto} onPick={(dataUrl, file) => { setFacePhoto(dataUrl); setFaceFile(file) }} />
 
       <div
         style={{

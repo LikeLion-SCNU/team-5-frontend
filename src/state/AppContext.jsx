@@ -13,36 +13,6 @@ const INITIAL_LEDGER = [
 ]
 
 /** 홈 화면 종 아이콘에서 볼 수 있는 알림 */
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 'n1',
-    kind: 'receipt',
-    title: '아침 명세서가 도착했어요',
-    body: '어제 순이익 +0.4시간이 정산되었습니다. 명세서를 확인해보세요.',
-    time: '오늘 08:00',
-    to: '/receipt',
-    read: false,
-  },
-  {
-    id: 'n2',
-    kind: 'plan',
-    title: '오늘의 흑자 전환 미션',
-    body: '7시간 수면 미션을 완료하면 +1.5시간을 적립할 수 있어요.',
-    time: '오늘 07:30',
-    to: '/plan',
-    read: false,
-  },
-  {
-    id: 'n3',
-    kind: 'meal',
-    title: '식단 환산이 끝났어요',
-    body: '점심 식탁 분석 결과가 준비되었습니다. 지금 확인해보세요.',
-    time: '어제 13:12',
-    to: '/meal/records',
-    read: false,
-  },
-]
-
 export function AppProvider({ children }) {
   const [userName, setUserName] = useState('회원')
 
@@ -81,7 +51,8 @@ export function AppProvider({ children }) {
   const [homeMissions, setHomeMissions] = useState({ sleep: true, screen: false })
 
   /* 식사 */
-  const [hasMealRecords, setHasMealRecords] = useState(true)
+  const [hasMealRecords, setHasMealRecords] = useState(false)
+  const [mealRecords, setMealRecords] = useState([]) // 이번 세션에서 확정한 실제 식단
   const [mealItems, setMealItems] = useState([
     { id: 'rice', name: '현미밥', amount: '1공기 (210g)', confidence: '현미밥 98%', included: true },
     { id: 'pork', name: '삼겹살 구이', amount: '1인분 (150g)', confidence: '삼겹살 90%', included: true },
@@ -93,6 +64,8 @@ export function AppProvider({ children }) {
   /* 서버에 생성된 식사 기록 id (실서비스 연동) */
   const [mealServerId, setMealServerId] = useState(null)
   const [facePhoto, setFacePhoto] = useState(null)
+  const [faceFile, setFaceFile] = useState(null)
+  const [faceResult, setFaceResult] = useState(null) // { currentUrl, improvedUrl, disclaimer }
 
   /* 홈 데이터 유무 */
   const [hasData, setHasData] = useState(true)
@@ -133,7 +106,7 @@ export function AppProvider({ children }) {
   }, [])
 
   /* 알림함 */
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS)
+  const [notifications, setNotifications] = useState([])
   const unreadCount = notifications.filter((n) => !n.read).length
   const markAllRead = useCallback(() => setNotifications((ns) => ns.map((n) => ({ ...n, read: true }))), [])
   const markRead = useCallback((id) => setNotifications((ns) => ns.map((n) => (n.id === id ? { ...n, read: true } : n))), [])
@@ -173,6 +146,8 @@ export function AppProvider({ children }) {
       homeMissions,
       setHomeMissions,
       hasMealRecords,
+      mealRecords,
+      setMealRecords,
       setHasMealRecords,
       mealItems,
       setMealItems,
@@ -181,6 +156,10 @@ export function AppProvider({ children }) {
       mealServerId,
       setMealServerId,
       facePhoto,
+      faceFile,
+      setFaceFile,
+      faceResult,
+      setFaceResult,
       setFacePhoto,
       hasData,
       setHasData,
@@ -204,7 +183,7 @@ export function AppProvider({ children }) {
     [
       userName, protectionMode, displayDelta,
       links, integrations, notify, planAccepted, missions, homeMissions, hasMealRecords, mealItems,
-      hasData, selectedDate, consents, dataChecks, faceSimDone, ledger, mealPhoto, facePhoto, mealServerId,
+      hasData, selectedDate, consents, dataChecks, faceSimDone, ledger, mealPhoto, facePhoto, faceFile, faceResult, mealServerId,
       notifications, unreadCount, markAllRead, markRead, clearNotifications,
       trackNav, popNav,
     ],
