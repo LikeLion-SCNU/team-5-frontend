@@ -1,0 +1,147 @@
+/* ==========================================================================
+   내일은행 - 전역 스타일
+
+   글꼴: Noto Sans KR (가변 폰트, public/fonts/NotoSansKR.woff2)
+   라이선스: SIL Open Font License 1.1 (public/fonts/OFL.txt)
+   ========================================================================== */
+@font-face {
+  font-family: 'Noto Sans KR';
+  src: url('/fonts/NotoSansKR.woff2') format('woff2-variations'),
+       url('/fonts/NotoSansKR.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   색상은 와이어프레임에 존재하는 값만 사용한다. (추가 색상 금지)
+   ========================================================================== */
+:root {
+  /* 배경 / 표면 */
+  --cream: #FDFBF7;          /* rgba(253,251,247,1) */
+  --white: #FFFFFF;          /* rgba(255,255,255,1) */
+  --beige: #F5ECE3;          /* rgba(245,236,227,1) */
+  --beige-2: #ECE4DB;        /* rgba(236,228,219,1) */
+  --beige-3: #F5ECE1;        /* rgba(245,236,225,1) */
+
+  /* 텍스트 */
+  --ink: #2D241E;            /* rgba(45,36,30,1) */
+  --ink-2: #332D26;          /* rgba(51,45,38,1) */
+  --ink-3: #66594C;          /* rgba(102,89,76,1) */
+  --muted: #8C7A6B;          /* rgba(140,122,107,1) */
+  --muted-2: #8B796B;        /* rgba(139,121,107,1) */
+  --muted-3: #B0A89E;        /* rgba(176,168,158,1) */
+  --muted-4: #B2A599;        /* rgba(178,165,153,1) */
+  --line: #D1C9C0;           /* rgba(209,201,192,1) */
+
+  /* 브랜드 */
+  --brown: #A67C52;          /* rgba(166,124,82,1) */
+  --brown-2: #A57C51;        /* rgba(165,124,81,1) */
+
+  /* 상태 */
+  --green: #4A7C59;          /* rgba(74,124,89,1) */
+  --green-bg: #EBF2EC;       /* rgba(235,242,236,1) */
+  --green-bg-2: #E8F2EC;     /* rgba(232,242,236,1) */
+  --red: #C84B31;            /* rgba(200,75,49,1) */
+  --red-bg: #FCEEEB;         /* rgba(252,238,235,1) */
+  --red-bg-2: #FDF0EE;       /* rgba(253,240,238,1) */
+  --red-bg-3: #FBECE9;       /* rgba(251,236,233,1) */
+  --yellow-bg: #FFF8E1;      /* rgba(255,248,225,1) */
+  --ivory: #FFFFEE;          /* rgba(255,255,238,1) */
+  --kakao: #FDEB1D;          /* rgba(253,235,29,1) */
+  --sky: #CFEFFF;            /* rgba(207,239,255,1) */
+  --black: #000000;          /* rgba(0,0,0,1) */
+
+  /* 그림자 (와이어프레임 box-shadow 값) */
+  --shadow-card: 0px 4px 12px rgba(45, 36, 30, 0.04);
+  --shadow-green: 0px 4px 12px rgba(74, 124, 89, 0.08);
+  --shadow-soft: 0px 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--cream);
+}
+
+body {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  word-break: keep-all;
+}
+
+/* 모든 요소가 같은 글꼴을 쓰도록 통일 */
+button, input, textarea, select, a, span, div, p, h1, h2, h3, h4, h5, h6 {
+  font-family: inherit;
+}
+
+button { font-family: inherit; border: none; background: none; padding: 0; margin: 0; cursor: pointer; color: inherit; }
+input { font-family: inherit; }
+ul, li { margin: 0; padding: 0; list-style: none; }
+
+/* ---------- 폰 프레임 ---------- */
+.stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  overflow: hidden;
+}
+.phone {
+  width: 393px;
+  height: 808px;          /* 852 - 44 (상단 상태바 베젤 제거) */
+  position: relative;
+  overflow: hidden;
+  background: var(--cream);
+  transform-origin: center center;
+  flex: none;
+}
+
+/* 화면 내부 공통
+   좌표는 와이어프레임(393x852) 기준을 그대로 쓰고,
+   상태바 영역(상단 44px)만큼 위로 올려서 베젤 없이 보이게 한다. */
+.screen {
+  position: absolute;
+  top: -44px; left: 0;
+  width: 393px;
+  height: 852px;
+  background: var(--cream);
+  overflow: hidden;
+}
+/* 원래부터 상단 여백이 없는 화면(사진이 최상단부터 시작) */
+.screen--full {
+  top: 0;
+  height: 808px;
+}
+.abs { position: absolute; }
+
+/* 스크롤 가능한 영역 */
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-y::-webkit-scrollbar { display: none; }
+
+/* 옆으로 넘기는 페이저 (연구 출처 상세) */
+.pager {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.pager::-webkit-scrollbar { display: none; }
+
+.pressable { transition: opacity .12s ease; }
+.pressable:active { opacity: .7; }
+
+/* 텍스트 줄바꿈 보존 */
+.pre { white-space: pre-wrap; }
