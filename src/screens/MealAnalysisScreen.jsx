@@ -11,7 +11,7 @@ const DOT_COLORS = ['var(--green)', 'var(--red)', 'var(--brown)']
 export default function MealAnalysisScreen() {
   const navigate = useNavigate()
   const goBack = useGoBack('/meal')
-  const { mealItems, setMealItems, setHasMealRecords, mealPhoto, mealServerId } = useApp()
+  const { mealItems, setMealItems, setHasMealRecords, mealRecords, setMealRecords, mealPhoto, mealServerId } = useApp()
   const [editing, setEditing] = useState(null)
   const [draft, setDraft] = useState('')
   const [newName, setNewName] = useState('')
@@ -20,25 +20,65 @@ export default function MealAnalysisScreen() {
   const serverIdsRef = useRef([])
   const [confirming, setConfirming] = useState(false)
 
-  /* 서버 분석이 진행 중이면 결과를 기다렸다가 항목을 실제 값으로 바꾼다 (실패 시 예시 값 유지) */
+  const [analyzing, setAnalyzing] = useState(!!mealServerId)
+
+  /* 새 업로드마다 이전 결과를 비우고, 서버 분석 결과를 기다려 실제 값으로 채운다 */
   useEffect(() => {
     if (!mealServerId) return
     let alive = true
+    setAnalyzing(true)
+    setMealItems([])
+    serverIdsRef.current = []
     waitForAnalysis(mealServerId)
       .then((meal) => {
-        if (!alive || !meal?.items?.length) return
-        serverIdsRef.current = meal.items.map((it) => it.id)
+        if (!alive) return
+        serverIdsRef.current = (meal?.items ?? []).map((it) => it.id)
         setMealItems(
-          meal.items
-            .filter((it) => !it.is_deleted)
-            .map((it) => ({ id: it.id, name: it.food_name, amount: it.portion || '', confidence: '', included: true })),
+          (meal?.items ?? [])
+            .filter((it) => !it.is_deleted && !it.deleted)
+            .map((it) => ({
+              id: it.id,
+              name: it.food_name,
+              amount: it.portion || '',
+              category: it.category,
+              eligibility: it.eligibility,
+              value: Number(it.value) || 1,
+              included: true,
+            })),
         )
       })
       .catch(() => {})
+      .finally(() => {
+        if (alive) setAnalyzing(false)
+      })
     return () => {
       alive = false
     }
   }, [mealServerId, setMealItems])
+
+  /* 실제 항목 기반 수명 환산 예상치 — V8 표준 계수와 동일 (과채류 +18분/회분·일 5회분 상한, 음주 첫 잔 제외 -15분) */
+  const qualifyingServings = Math.min(
+    mealItems
+      .filter((it) => it.category === 'FOOD' && it.eligibility === 'FRUIT_OR_VEGETABLE')
+      .reduce((sum, it) => sum + Math.min(it.value ?? 1, 5), 0),
+    5,
+  )
+  const alcoholDrinks = mealItems
+    .filter((it) => it.category === 'ALCOHOL')
+    .reduce((sum, it) => sum + Math.min(it.value ?? 1, 12), 0)
+  const estimateMinutes = Math.round(qualifyingServings * 18 - Math.max(alcoholDrinks - 1, 0) * 15)
+  const estimateHours = (estimateMinutes / 60).toFixed(1)
+  const estimateText = analyzing
+    ? '분석 중...'
+    : `예상 ${estimateMinutes >= 0 ? '+' : ''}${estimateHours}h`
+  const estimateColor = analyzing || estimateMinutes === 0 ? 'var(--muted)' : estimateMinutes > 0 ? 'var(--green)' : 'var(--red)'
+  const badge = analyzing
+    ? null
+    : alcoholDrinks > 1
+      ? { text: '음주 감점 포함', bg: 'var(--red-bg-3)', color: 'var(--red)' }
+      : qualifyingServings > 0
+        ? { text: '과채류 적립', bg: 'var(--green-bg)', color: 'var(--green)' }
+        : { text: '중립 식단 · 감점 없음', bg: 'var(--cream)', color: 'var(--muted)' }
 
   const remove = (id) => setMealItems(mealItems.filter((it) => it.id !== id))
 
@@ -84,6 +124,19 @@ export default function MealAnalysisScreen() {
         setConfirming(false)
       }
     }
+    const hour = new Date().getHours()
+    const slot = hour < 11 ? '아침 식사' : hour < 15 ? '점심 식사' : hour < 18 ? '간식' : '저녁 식사'
+    setMealRecords([
+      ...mealRecords,
+      {
+        key: `r${Date.now()}`,
+        slot,
+        menu: mealItems.map((it) => it.name).join(', ') || '기록된 식단',
+        detail: `${mealItems.length}개 항목`,
+        delta: `${estimateMinutes >= 0 ? '+' : ''}${(estimateMinutes / 60).toFixed(1)}h`,
+        sign: estimateMinutes >= 0 ? 1 : -1,
+      },
+    ])
     setHasMealRecords(true)
     navigate('/meal/records')
   }
@@ -98,12 +151,15 @@ export default function MealAnalysisScreen() {
           style={{ position: 'absolute', top: 0, left: 0, width: 393, height: 410, objectFit: 'cover' }}
         />
 
-        {/* AI 인식 태그 */}
-        {[
-          { text: '현미밥 98%', top: 150, left: 60 },
-          { text: '삼겹살 90%', top: 120, left: 180 },
-          { text: '김치 95%', top: 220, left: 240 },
-        ].map((t) => (
+        {/* AI 인식 태그 — 실제 분석 항목 */}
+        {(analyzing
+          ? [{ text: 'AI 분석 중...', top: 150, left: 60 }]
+          : mealItems.slice(0, 4).map((it, i) => ({
+              text: it.name,
+              top: 120 + (i % 2) * 60 + Math.floor(i / 2) * 110,
+              left: 60 + (i % 2) * 140,
+            }))
+        ).map((t) => (
           <span
             key={t.text}
             style={{
@@ -164,25 +220,27 @@ export default function MealAnalysisScreen() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 28 }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--muted)' }}>식단 수명 환산</div>
-            <div style={{ fontSize: 22, fontWeight: 800, lineHeight: '30px', color: 'var(--red)', whiteSpace: 'nowrap' }}>
-              환산 수명: -0.2h
+            <div style={{ fontSize: 22, fontWeight: 800, lineHeight: '30px', color: estimateColor, whiteSpace: 'nowrap' }}>
+              환산 수명: {estimateText}
             </div>
           </div>
-          <span
-            style={{
-              flex: 'none',
-              marginTop: 4,
-              padding: '6px 10px',
-              borderRadius: 8,
-              background: 'var(--red-bg-3)',
-              fontSize: 12,
-              fontWeight: 700,
-              color: 'var(--red)',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            과잉 영양 위험
-          </span>
+          {badge && (
+            <span
+              style={{
+                flex: 'none',
+                marginTop: 4,
+                padding: '6px 10px',
+                borderRadius: 8,
+                background: badge.bg,
+                fontSize: 12,
+                fontWeight: 700,
+                color: badge.color,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {badge.text}
+            </span>
+          )}
         </div>
 
         {/* 인식 항목 */}

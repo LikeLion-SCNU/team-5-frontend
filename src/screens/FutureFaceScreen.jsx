@@ -56,6 +56,9 @@ export default function FutureFaceScreen() {
             clipPath: `inset(0 ${345 - split}px 0 0)`,
           }}
         />
+        <span style={{ position: 'absolute', top: 8, right: 8, padding: '3px 8px', borderRadius: 6, background: 'rgba(45,36,30,0.65)', color: 'var(--white)', fontSize: 11, fontWeight: 600 }}>
+          예시 이미지
+        </span>
 
         {/* 라벨 */}
         <span

@@ -8,11 +8,11 @@ import { useApp } from '../state/AppContext'
 export default function FutureFaceResultScreen() {
   const navigate = useNavigate()
   const goBack = useGoBack('/future')
-  const { setPlanAccepted } = useApp()
+  const { setPlanAccepted, faceResult } = useApp()
 
   const cards = [
-    { key: 'current', left: 24, img: '/images/face_result_current.png', label: '현재 습관 유지 시', bg: 'var(--red-bg-2)', color: 'var(--red)' },
-    { key: 'plan', left: 202, img: '/images/face_result_plan.png', label: '투자 플랜 성공 시', bg: 'var(--green-bg)', color: 'var(--green)' },
+    { key: 'current', left: 24, img: faceResult?.currentUrl || '/images/face_result_current.png', label: '현재 습관 유지 시', bg: 'var(--red-bg-2)', color: 'var(--red)' },
+    { key: 'plan', left: 202, img: faceResult?.improvedUrl || '/images/face_result_plan.png', label: '투자 플랜 성공 시', bg: 'var(--green-bg)', color: 'var(--green)' },
   ]
 
   return (

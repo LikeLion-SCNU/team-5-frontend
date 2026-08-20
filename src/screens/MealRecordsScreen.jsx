@@ -4,18 +4,13 @@ import BottomNav from '../components/BottomNav'
 import { IconChevronLeft, IconSun, IconMeal, IconCoffee, IconMoon } from '../components/Icons'
 import { useApp } from '../state/AppContext'
 
-const RECORDS = [
-  { key: 'b', slot: '아침 식사', menu: '현미밥, 고등어구이, 시금치나물', kcal: '420 kcal', delta: '+0.5h', sign: 1, Icon: IconSun },
-  { key: 'l', slot: '점심 식사', menu: '돈까스, 라면, 콜라', kcal: '950 kcal', delta: '-0.4h', sign: -1, Icon: IconMeal },
-  { key: 's', slot: '간식', menu: '믹스커피, 도넛 1개', kcal: '310 kcal', delta: '-0.2h', sign: -1, Icon: IconCoffee },
-  { key: 'd', slot: '저녁 식사', menu: '연어 샐러드, 아보카도, 두유', kcal: '380 kcal', delta: '+0.3h', sign: 1, Icon: IconMoon },
-]
+const SLOT_ICON = { '아침 식사': IconSun, '점심 식사': IconMeal, 간식: IconCoffee, '저녁 식사': IconMoon }
 
 /** 오늘의 식탁 - 기록 (데이터 있음) */
 export default function MealRecordsScreen() {
   const navigate = useNavigate()
   const goBack = useGoBack('/meal')
-  const { displayDelta, protectionMode } = useApp()
+  const { displayDelta, protectionMode, mealRecords } = useApp()
 
   return (
     <div className="screen">
@@ -62,7 +57,15 @@ export default function MealRecordsScreen() {
           gap: 12,
         }}
       >
-        {RECORDS.map(({ key, slot, menu, kcal, delta, sign, Icon }) => {
+        {mealRecords.length === 0 && (
+          <div style={{ padding: '48px 0', textAlign: 'center', fontSize: 14, color: 'var(--muted)' }}>
+            아직 확정한 식단이 없어요.
+            <br />
+            사진을 올려 오늘의 식탁을 기록해보세요.
+          </div>
+        )}
+        {mealRecords.map(({ key, slot, menu, detail, delta, sign }) => {
+          const Icon = SLOT_ICON[slot] ?? IconMeal
           const plus = sign > 0 || protectionMode
           return (
             <div
@@ -97,7 +100,7 @@ export default function MealRecordsScreen() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, lineHeight: '17px', color: 'var(--muted)' }}>{slot}</div>
                 <div style={{ fontSize: 14, fontWeight: 800, lineHeight: '20px', color: 'var(--ink)' }}>{menu}</div>
-                <div style={{ fontSize: 12, fontWeight: 500, lineHeight: '17px', color: 'var(--muted)' }}>{kcal}</div>
+                <div style={{ fontSize: 12, fontWeight: 500, lineHeight: '17px', color: 'var(--muted)' }}>{detail}</div>
               </div>
 
               <span

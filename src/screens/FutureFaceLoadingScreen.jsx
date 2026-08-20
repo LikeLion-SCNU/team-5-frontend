@@ -1,19 +1,51 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import AlertModal from '../components/AlertModal'
 import { useApp } from '../state/AppContext'
+import { uploadAndCreateSimulation, waitForSimulation, fetchMediaObjectUrl } from '../api/face'
 
-/** 미래 얼굴 예측 ing — 생성 중 */
+/** 미래 얼굴 예측 ing — 실제 AI 이미지 생성 */
 export default function FutureFaceLoadingScreen() {
   const navigate = useNavigate()
-  const { setFaceSimDone, facePhoto } = useApp()
+  const { setFaceSimDone, facePhoto, faceFile, setFaceResult } = useApp()
+  const [alert, setAlert] = useState('')
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setFaceSimDone(true)
-      navigate('/future/result', { replace: true })
-    }, 2600)
-    return () => clearTimeout(t)
+    let alive = true
+    const run = async () => {
+      if (!faceFile) {
+        navigate('/future/upload', { replace: true })
+        return
+      }
+      try {
+        const { id } = await uploadAndCreateSimulation(
+          faceFile,
+          '수면 부족과 스크린 과다 사용이 이어질 경우 vs 흑자 전환 플랜을 실천할 경우',
+        )
+        const sim = await waitForSimulation(id)
+        if (!alive) return
+        if (sim.status !== 'done') {
+          setAlert('이미지 생성에 실패했어요.\n잠시 후 다시 시도해주세요.')
+          return
+        }
+        const byLabel = Object.fromEntries((sim.outputs ?? []).map((o) => [o.label, o.mediaId]))
+        const [currentUrl, improvedUrl] = await Promise.all([
+          byLabel.current ? fetchMediaObjectUrl(byLabel.current) : null,
+          byLabel.improved ? fetchMediaObjectUrl(byLabel.improved) : null,
+        ])
+        if (!alive) return
+        setFaceResult({ currentUrl, improvedUrl, disclaimer: sim.disclaimer })
+        setFaceSimDone(true)
+        navigate('/future/result', { replace: true })
+      } catch (e) {
+        if (alive) setAlert(e.message || '이미지 생성에 실패했어요.\n잠시 후 다시 시도해주세요.')
+      }
+    }
+    run()
+    return () => {
+      alive = false
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -90,6 +122,8 @@ export default function FutureFaceLoadingScreen() {
       >
         현재 식생활과 라이프스타일 패턴에 기인한 노화 지표를 분석 중입니다. 잠시만 기다려주세요.
       </span>
+
+      <AlertModal open={!!alert} message={alert} onClose={() => { setAlert(''); navigate('/future/upload', { replace: true }) }} />
 
       {/* 스피너 */}
       <div
