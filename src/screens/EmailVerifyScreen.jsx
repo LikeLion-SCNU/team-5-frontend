@@ -4,13 +4,14 @@ import Header from '../components/Header'
 import AlertModal from '../components/AlertModal'
 import { login, resendVerification, verifyEmail } from '../api/auth'
 import { ApiError } from '../api/client'
+import { readPassword, clearPassword } from '../state/pendingCredential'
 
 /** 이메일 인증 — 가입 시 발송된 6자리 코드를 입력한다 */
 export default function EmailVerifyScreen() {
   const navigate = useNavigate()
   const location = useLocation()
   const email = location.state?.email ?? ''
-  const password = location.state?.password ?? ''
+  const password = readPassword() ?? ''
 
   const [code, setCode] = useState('')
   const [alert, setAlert] = useState('')
@@ -38,8 +39,10 @@ export default function EmailVerifyScreen() {
       await verifyEmail(email, code.trim())
       if (password) {
         await login(email, password)
+        clearPassword()
         navigate('/privacy')
       } else {
+        clearPassword()
         navigate('/login')
       }
     } catch (e) {

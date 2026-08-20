@@ -5,6 +5,7 @@ import useGoBack from '../hooks/useGoBack'
 import AlertModal from '../components/AlertModal'
 import { join, login } from '../api/auth'
 import { ApiError } from '../api/client'
+import { holdPassword } from '../state/pendingCredential'
 
 const fieldLabel = {
   position: 'absolute',
@@ -68,7 +69,8 @@ export default function SignUpScreen() {
     try {
       const joined = await join(email.trim(), pw, name.trim())
       if (joined?.verificationRequired) {
-        navigate('/verify-email', { state: { email: email.trim(), password: pw } })
+        holdPassword(pw)
+        navigate('/verify-email', { state: { email: email.trim() } })
         return
       }
       await login(email.trim(), pw)
