@@ -120,7 +120,7 @@ export default function FutureFaceLoadingScreen() {
           color: 'var(--muted)',
         }}
       >
-        현재 식생활과 라이프스타일 패턴에 기인한 노화 지표를 분석 중입니다. 잠시만 기다려주세요.
+        현재 식생활과 라이프스타일 패턴에 기인한 노화 지표를 분석 중입니다. 두 장의 미래 이미지를 생성하느라 보통 1~2분 정도 걸려요.
       </span>
 
       <AlertModal open={!!alert} message={alert} onClose={() => { setAlert(''); navigate('/future/upload', { replace: true }) }} />
