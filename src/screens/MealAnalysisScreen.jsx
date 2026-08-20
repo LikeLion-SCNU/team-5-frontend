@@ -11,7 +11,7 @@ const DOT_COLORS = ['var(--green)', 'var(--red)', 'var(--brown)']
 export default function MealAnalysisScreen() {
   const navigate = useNavigate()
   const goBack = useGoBack('/meal')
-  const { mealItems, setMealItems, setHasMealRecords, mealRecords, setMealRecords, mealPhoto, mealServerId } = useApp()
+  const { mealItems, setMealItems, setHasMealRecords, mealRecords, setMealRecords, mealPhoto, mealServerId, mealUploadFailed } = useApp()
   const [editing, setEditing] = useState(null)
   const [draft, setDraft] = useState('')
   const [newName, setNewName] = useState('')
@@ -20,7 +20,13 @@ export default function MealAnalysisScreen() {
   const serverIdsRef = useRef([])
   const [confirming, setConfirming] = useState(false)
 
-  const [analyzing, setAnalyzing] = useState(!!mealServerId)
+  // 업로드가 끝나 서버 id가 생길 때까지도 분석 중으로 본다 (실패하면 즉시 해제)
+  const [analyzing, setAnalyzing] = useState(!mealUploadFailed)
+
+  /* 업로드가 실패하면 분석 대기를 멈추고 재시도를 안내한다 */
+  useEffect(() => {
+    if (mealUploadFailed) setAnalyzing(false)
+  }, [mealUploadFailed])
 
   /* 새 업로드마다 이전 결과를 비우고, 서버 분석 결과를 기다려 실제 값으로 채운다 */
   useEffect(() => {
@@ -68,11 +74,10 @@ export default function MealAnalysisScreen() {
     .reduce((sum, it) => sum + Math.min(it.value ?? 1, 12), 0)
   const estimateMinutes = Math.round(qualifyingServings * 18 - Math.max(alcoholDrinks - 1, 0) * 15)
   const estimateHours = (estimateMinutes / 60).toFixed(1)
-  const estimateText = analyzing
-    ? '분석 중...'
-    : `예상 ${estimateMinutes >= 0 ? '+' : ''}${estimateHours}h`
-  const estimateColor = analyzing || estimateMinutes === 0 ? 'var(--muted)' : estimateMinutes > 0 ? 'var(--green)' : 'var(--red)'
-  const badge = analyzing
+  const failed = mealUploadFailed
+  const estimateText = failed ? '—' : analyzing ? '분석 중...' : `예상 ${estimateMinutes >= 0 ? '+' : ''}${estimateHours}h`
+  const estimateColor = failed || analyzing || estimateMinutes === 0 ? 'var(--muted)' : estimateMinutes > 0 ? 'var(--green)' : 'var(--red)'
+  const badge = failed || analyzing
     ? null
     : alcoholDrinks > 1
       ? { text: '음주 감점 포함', bg: 'var(--red-bg-3)', color: 'var(--red)' }
@@ -243,6 +248,32 @@ export default function MealAnalysisScreen() {
           )}
         </div>
 
+        {/* 업로드/분석 실패 안내 — 재시도하면 사진 선택 화면으로 돌아간다 */}
+        {failed && (
+          <div style={{ padding: '8px 0 24px', textAlign: 'center' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, lineHeight: '21px', color: 'var(--ink)', marginBottom: 16 }}>
+              분석에 실패했어요.
+              <br />
+              다시 시도해주세요.
+            </div>
+            <button
+              className="pressable"
+              onClick={() => navigate('/meal')}
+              style={{
+                height: 44,
+                padding: '0 32px',
+                borderRadius: 12,
+                background: 'var(--cream)',
+                color: 'var(--brown)',
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
+
         {/* 인식 항목 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
           {mealItems.map((item, i) => (
@@ -297,16 +328,17 @@ export default function MealAnalysisScreen() {
           ))}
         </div>
 
-        {/* 확정 */}
+        {/* 확정 — 서버 분석 기록이 있어야 원장에 기입할 수 있다 */}
         <button
           className="pressable"
           onClick={confirm}
+          disabled={!mealServerId || confirming}
           style={{
             width: '100%',
             height: 56,
             borderRadius: 16,
-            background: 'var(--brown)',
-            color: 'var(--white)',
+            background: mealServerId && !confirming ? 'var(--brown)' : 'var(--muted-3)',
+            color: mealServerId && !confirming ? 'var(--white)' : 'var(--black)',
             fontSize: 16,
             fontWeight: 700,
             marginBottom: 16,
@@ -316,6 +348,7 @@ export default function MealAnalysisScreen() {
         </button>
 
         {/* 직접 입력 */}
+        {!failed && (
         <div
           style={{
             position: 'relative',
@@ -367,6 +400,7 @@ export default function MealAnalysisScreen() {
             +
           </button>
         </div>
+        )}
       </div>
     </div>
   )

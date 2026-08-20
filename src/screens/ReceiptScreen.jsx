@@ -62,7 +62,7 @@ export default function ReceiptScreen() {
   }, [selectedDate])
 
   const rows = day
-    ? day.lines.map((ln) => ({
+    ? (day.lines ?? []).map((ln) => ({
         id: ln.entryId,
         tag: HABIT_TAG[ln.habitType] ?? ln.habitType,
         title: ln.displayText,
@@ -70,8 +70,9 @@ export default function ReceiptScreen() {
         sign: ln.minutesDelta < 0 ? -1 : 1,
       }))
     : ledger
-  const totalText = day ? fmtDelta(day.dailyNetMinutes) : '+0.4h'
-  const totalPlus = day ? day.dailyNetMinutes >= 0 : true
+  const totalMinutes = day ? (day.lines ?? []).reduce((sum, ln) => sum + (ln.minutesDelta || 0), 0) : 0
+  const totalText = rows.length > 0 ? fmtDelta(totalMinutes) : '0h'
+  const totalPlus = totalMinutes >= 0
 
   return (
     <div className="screen">
@@ -171,6 +172,13 @@ export default function ReceiptScreen() {
 
           {/* 원장 항목 — 금액 칸이 두 줄이 되면 행 전체가 같이 늘어나고 내용은 세로 가운데 정렬 */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 40 }}>
+            {rows.length === 0 && (
+              <div style={{ padding: '32px 0', textAlign: 'center', fontSize: 14, lineHeight: '22px', color: 'var(--muted)' }}>
+                이 날의 기록이 없습니다.
+                <br />
+                식사와 습관을 기록하면 명세서가 채워져요.
+              </div>
+            )}
             {rows.map((row) => {
               const plus = row.sign > 0 || protectionMode
               return (

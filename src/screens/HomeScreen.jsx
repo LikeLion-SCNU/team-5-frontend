@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import BottomNav from '../components/BottomNav'
-import { IconBell, IconMoon, IconFootsteps, IconSmartphone, IconTrendUp, IconCheck } from '../components/Icons'
+import { IconBell, IconTrendUp, IconTrendDown, IconCheck } from '../components/Icons'
 import { useApp } from '../state/AppContext'
 import { getBalance } from '../api/ledger'
 import { me } from '../api/auth'
@@ -14,23 +14,25 @@ function fmtBalance(minutes) {
   return `${minutes < 0 ? '- ' : '+ '}${text} 시간`
 }
 
-const STATS = [
-  { key: 'sleep', name: '수면', value: '7.2h', Icon: IconMoon, left: 24, fill: 68, color: 'var(--brown)' },
-  { key: 'steps', name: '걸음', value: '8,432', Icon: IconFootsteps, left: 142, fill: 56, color: 'var(--green)' },
-  { key: 'screen', name: '스크린타임', value: '3.1h', Icon: IconSmartphone, left: 260, fill: 36, color: 'var(--red)' },
-]
-
 /** 홈화면 (로그인 후, 들어가면 먼저 나오는 화면) */
 export default function HomeScreen() {
   const navigate = useNavigate()
   const { userName, homeMissions, setHomeMissions, hasData, unreadCount } = useApp()
 
-  /* 실서비스 데이터 — 로그인돼 있으면 잔고·사용자명을 불러오고, 실패하면 예시 값 유지 */
+  /* 실서비스 데이터 — 로그인돼 있으면 잔고·사용자명을 불러온다 */
   const [balance, setBalance] = useState(null)
   const [displayName, setDisplayName] = useState(null)
   useEffect(() => {
     if (!isLoggedIn()) return
-    getBalance().then(setBalance).catch(() => {})
+    getBalance()
+      .then((b) => {
+        setBalance(b)
+        // 서버가 보호 모드를 제안하면 제안 화면으로 이동한다
+        if (b?.protectionSuggested) {
+          navigate('/protection-suggest', { state: { proposalId: b.protectionProposalId ?? null } })
+        }
+      })
+      .catch(() => {})
     me().then((u) => setDisplayName(u?.name ?? u?.email?.split('@')[0] ?? null)).catch(() => {})
   }, [])
 
@@ -78,69 +80,58 @@ export default function HomeScreen() {
         <span style={{ position: 'absolute', top: 24, left: 24, width: 90, fontSize: 14, fontWeight: 600, color: 'var(--muted)' }}>
           누적 수명 잔고
         </span>
-        <span style={{ position: 'absolute', top: 46, left: 24, width: 249, fontSize: 38, fontWeight: 900, color: 'var(--ink)' }}>
-          {balance ? fmtBalance(balance.balanceMinutes) : '+ 12,540 시간'}
+        <span
+          style={{
+            position: 'absolute',
+            top: 46,
+            left: 24,
+            width: 297,
+            fontSize: balance?.protectionMode && balance?.displayText ? 24 : 38,
+            fontWeight: 900,
+            lineHeight: '46px',
+            color: 'var(--ink)',
+          }}
+        >
+          {balance
+            ? (balance.protectionMode && balance.displayText ? balance.displayText : fmtBalance(balance.balanceMinutes))
+            : '— 시간'}
         </span>
 
-        <div
-          style={{
-            position: 'absolute',
-            top: 114,
-            right: 24,
-            height: 26,
-            borderRadius: 100,
-            background: 'var(--green-bg)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '0 10px',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <IconTrendUp size={14} color="#4A7C59" />
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--green)' }}>
-            {balance
-              ? (balance.previousDayDeltaMinutes === 0
-                  ? '어제와 같은 잔고예요'
-                  : `어제보다 ${Math.abs(balance.previousDayDeltaMinutes / 60).toLocaleString('ko-KR', { maximumFractionDigits: 1 })}시간 ${balance.previousDayDeltaMinutes > 0 ? '증가' : '감소'}`)
-              : '2.1% 어제보다 2시간 증가'}
-          </span>
-        </div>
-      </div>
-
-      {/* 자동 수집 지표 — 이름과 값을 두 줄로 나눠 글씨가 겹치지 않게 한다 */}
-      {STATS.map(({ key, name, value, Icon, left, fill, color }) => (
-        <div
-          key={key}
-          style={{
-            position: 'absolute',
-            top: 284,
-            left,
-            width: 108,
-            height: 64,
-            borderRadius: 16,
-            background: 'var(--white)',
-            boxShadow: 'var(--shadow-card)',
-          }}
-        >
-          <span style={{ position: 'absolute', top: 10, left: 12 }}>
-            <Icon size={16} color="#8C7A6B" />
-          </span>
-          <span
-            style={{ position: 'absolute', top: 9, left: 34, width: 62, fontSize: 12, fontWeight: 500, lineHeight: '18px', color: 'var(--muted)' }}
+        {balance && !balance.protectionMode && Number.isFinite(balance.previousDayDeltaMinutes) && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 114,
+              right: 24,
+              height: 26,
+              borderRadius: 100,
+              background: balance.previousDayDeltaMinutes < 0 ? 'var(--red-bg-3)' : 'var(--green-bg)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '0 10px',
+              whiteSpace: 'nowrap',
+            }}
           >
-            {name}
-          </span>
-          <span
-            style={{ position: 'absolute', top: 27, left: 12, width: 84, fontSize: 14, fontWeight: 700, lineHeight: '18px', color: 'var(--ink)' }}
-          >
-            {value}
-          </span>
-          <div style={{ position: 'absolute', top: 50, left: 12, width: 84, height: 6, borderRadius: 10, background: 'var(--cream)' }}>
-            <div style={{ width: fill, height: 6, borderRadius: 10, background: color }} />
+            {balance.previousDayDeltaMinutes < 0
+              ? <IconTrendDown size={14} color="#C84B31" />
+              : <IconTrendUp size={14} color="#4A7C59" />}
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: balance.previousDayDeltaMinutes < 0 ? 'var(--red)' : 'var(--green)',
+              }}
+            >
+              {balance.previousDayDeltaMinutes === 0
+                ? '어제와 동일'
+                : balance.previousDayDeltaMinutes > 0
+                  ? `+${Math.round(balance.previousDayDeltaMinutes).toLocaleString('ko-KR')}분 어제보다 증가`
+                  : `-${Math.abs(Math.round(balance.previousDayDeltaMinutes)).toLocaleString('ko-KR')}분 어제보다 감소`}
+            </span>
           </div>
-        </div>
-      ))}
+        )}
+      </div>
 
       {/* 오늘의 흑자 전환 미션 */}
       <span style={{ position: 'absolute', top: 364, left: 24, width: 200, fontSize: 16, fontWeight: 800, color: 'var(--ink)' }}>

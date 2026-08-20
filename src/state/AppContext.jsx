@@ -4,13 +4,13 @@ import { isLoggedIn } from '../api/client'
 
 const AppCtx = createContext(null)
 
-const INITIAL_LEDGER = [
-  { id: 1, date: '08.20', tag: '식사', title: '영양 잡힌 아침 식사', delta: '+1.2h', sign: 1 },
-  { id: 2, date: '08.20', tag: '운동', title: '고강도 러닝 30분', delta: '+2.0h', sign: 1 },
-  { id: 3, date: '08.20', tag: '수면', title: '새벽 2시 늦은 취침', delta: '-1.5h', sign: -1 },
-  { id: 4, date: '08.20', tag: '야식', title: '야식 섭취 (맵고 짠 배달)', delta: '-0.8h', sign: -1 },
-  { id: 5, date: '08.20', tag: '수면', title: '7.2시간 숙면 달성', delta: '+1.5h', sign: 1 },
-]
+const INITIAL_LEDGER = []
+
+/** 오늘 날짜 'YYYY.MM.DD' (로컬 기준) */
+function todayDot() {
+  const d = new Date()
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
 
 /** 홈 화면 종 아이콘에서 볼 수 있는 알림 */
 export function AppProvider({ children }) {
@@ -53,16 +53,14 @@ export function AppProvider({ children }) {
   /* 식사 */
   const [hasMealRecords, setHasMealRecords] = useState(false)
   const [mealRecords, setMealRecords] = useState([]) // 이번 세션에서 확정한 실제 식단
-  const [mealItems, setMealItems] = useState([
-    { id: 'rice', name: '현미밥', amount: '1공기 (210g)', confidence: '현미밥 98%', included: true },
-    { id: 'pork', name: '삼겹살 구이', amount: '1인분 (150g)', confidence: '삼겹살 90%', included: true },
-    { id: 'kimchi', name: '배추김치', amount: '적당량 (40g)', confidence: '김치 95%', included: true },
-  ])
+  const [mealItems, setMealItems] = useState([])
 
   /* 업로드한 사진 (식사 / 얼굴) — 업로드하면 그 사진이 화면에 그대로 보인다 */
   const [mealPhoto, setMealPhoto] = useState(null)
   /* 서버에 생성된 식사 기록 id (실서비스 연동) */
   const [mealServerId, setMealServerId] = useState(null)
+  /* 식사 사진 업로드 실패 여부 — 실패하면 분석 화면에서 재시도를 안내한다 */
+  const [mealUploadFailed, setMealUploadFailed] = useState(false)
   const [facePhoto, setFacePhoto] = useState(null)
   const [faceFile, setFaceFile] = useState(null)
   const [faceResult, setFaceResult] = useState(null) // { currentUrl, improvedUrl, disclaimer }
@@ -71,7 +69,7 @@ export function AppProvider({ children }) {
   const [hasData, setHasData] = useState(true)
 
   /* 명세서 날짜 */
-  const [selectedDate, setSelectedDate] = useState('2026.08.20')
+  const [selectedDate, setSelectedDate] = useState(todayDot)
 
   /* 약관/개인정보 동의 */
   const [consents, setConsents] = useState({ collect: false, purpose: false, sensitive: false })
@@ -155,6 +153,8 @@ export function AppProvider({ children }) {
       setMealPhoto,
       mealServerId,
       setMealServerId,
+      mealUploadFailed,
+      setMealUploadFailed,
       facePhoto,
       faceFile,
       setFaceFile,
@@ -183,7 +183,7 @@ export function AppProvider({ children }) {
     [
       userName, protectionMode, displayDelta,
       links, integrations, notify, planAccepted, missions, homeMissions, hasMealRecords, mealItems,
-      hasData, selectedDate, consents, dataChecks, faceSimDone, ledger, mealPhoto, facePhoto, faceFile, faceResult, mealServerId,
+      hasData, selectedDate, consents, dataChecks, faceSimDone, ledger, mealPhoto, facePhoto, faceFile, faceResult, mealServerId, mealUploadFailed,
       notifications, unreadCount, markAllRead, markRead, clearNotifications,
       trackNav, popNav,
     ],
