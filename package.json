@@ -1,0 +1,21 @@
+{
+  "name": "naeil-bank",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "내일은행 - 습관을 수명 시간으로 환전하는 은행 (React + PWA)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
+  }
+}
