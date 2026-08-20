@@ -2,7 +2,7 @@
 
 # 🦁 되는코드입니다. - Frontend
 
-### 멋쟁이사자처럼 순천대학교 14기 - 내일은행
+### 멋쟁이사자처럼 순천대학교 14기 - 시간은행
 
 [![Status](https://img.shields.io/badge/상태-개발중-FF7F00?style=flat-square)]()
 [![LikeLion](https://img.shields.io/badge/LikeLion--SCNU-14기-FF7F00?style=flat-square)]()
@@ -14,7 +14,7 @@
 
 ## 📌 프로젝트 소개
 
-> **내일은행** — 매일의 습관을 논문 근거 기반 '수명 시간'으로 환산해 은행 잔고처럼 보여주는 AI 웰니스 뱅크
+> **시간은행** — 매일의 습관을 논문 근거 기반 '수명 시간'으로 환산해 은행 잔고처럼 보여주는 AI 웰니스 뱅크
 
 **React 웹 + PWA** 형식입니다. 심사위원은 URL로 즉시 사용하고, 홈 화면에 추가하면 앱처럼 실행됩니다.
 
