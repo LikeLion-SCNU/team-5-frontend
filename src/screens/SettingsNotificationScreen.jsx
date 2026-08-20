@@ -1,6 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import { useEffect } from 'react'
 import Toggle from '../components/Toggle'
+import { getNotificationPreference, updateNotificationPreference, subscribePush } from '../api/notifications'
+import { isLoggedIn } from '../api/client'
 import TimeWheel from '../components/TimeWheel'
 import { useApp } from '../state/AppContext'
 
@@ -8,6 +11,23 @@ import { useApp } from '../state/AppContext'
 export default function SettingsNotificationScreen() {
   const navigate = useNavigate()
   const { notify, setNotify } = useApp()
+
+  /* 서버 알림 설정과 동기화 */
+  useEffect(() => {
+    if (!isLoggedIn()) return
+    getNotificationPreference()
+      .then((pref) => setNotify((n) => ({ ...n, morning: pref.enabled, morningTime: pref.morningTime ?? n.morningTime })))
+      .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** 아침 명세서 알림 저장 (켤 때는 웹 푸시 구독도 시도) */
+  const saveMorning = (morning, morningTime) => {
+    setNotify({ ...notify, morning, morningTime })
+    if (!isLoggedIn()) return
+    updateNotificationPreference(morning, morningTime).catch(() => {})
+    if (morning) subscribePush().catch(() => {})
+  }
 
   return (
     <div className="screen">
@@ -33,7 +53,7 @@ export default function SettingsNotificationScreen() {
           전날의 수명 변동 사항을 매일 배달합니다.
         </span>
         <div style={{ position: 'absolute', top: 24, left: 274 }}>
-          <Toggle on={notify.morning} onChange={(v) => setNotify({ ...notify, morning: v })} />
+          <Toggle on={notify.morning} onChange={(v) => saveMorning(v, notify.morningTime)} />
         </div>
 
         {/* 발송 시각 */}
@@ -50,7 +70,7 @@ export default function SettingsNotificationScreen() {
         >
           <TimeWheel
             value={notify.morningTime}
-            onChange={(t) => setNotify({ ...notify, morningTime: t })}
+            onChange={(t) => saveMorning(notify.morning, t)}
             disabled={!notify.morning}
           />
         </div>
