@@ -31,7 +31,7 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!isLoggedIn()) return
     getBalance().then(setBalance).catch(() => {})
-    me().then((u) => setDisplayName(u?.email?.split('@')[0] ?? null)).catch(() => {})
+    me().then((u) => setDisplayName(u?.name ?? u?.email?.split('@')[0] ?? null)).catch(() => {})
   }, [])
 
   // 데이터가 초기화된 상태면 빈 홈화면

@@ -1,4 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { me } from '../api/auth'
+import { isLoggedIn } from '../api/client'
 
 const AppCtx = createContext(null)
 
@@ -42,7 +44,21 @@ const INITIAL_NOTIFICATIONS = [
 ]
 
 export function AppProvider({ children }) {
-  const [userName] = useState('정연수')
+  const [userName, setUserName] = useState('회원')
+
+  /* 로그인 상태가 바뀔 때마다 실제 가입 이름을 불러온다 */
+  useEffect(() => {
+    let alive = true
+    const load = () => {
+      if (!isLoggedIn()) { setUserName('회원'); return }
+      me().then((u) => {
+        if (alive) setUserName(u?.name || u?.email?.split('@')[0] || '회원')
+      }).catch(() => {})
+    }
+    load()
+    window.addEventListener('auth-changed', load)
+    return () => { alive = false; window.removeEventListener('auth-changed', load) }
+  }, [])
 
   /* 보호 모드 (설정에서 직접 켜고 끈다) */
   const [protectionMode, setProtectionMode] = useState(false)

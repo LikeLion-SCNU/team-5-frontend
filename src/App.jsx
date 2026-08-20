@@ -5,6 +5,7 @@ import NavTracker from './components/NavTracker'
 /* 시작 / 인증 */
 import StartScreen from './screens/StartScreen'
 import SignUpScreen from './screens/SignUpScreen'
+import EmailVerifyScreen from './screens/EmailVerifyScreen'
 import LoginScreen from './screens/LoginScreen'
 import LoginErrorScreen from './screens/LoginErrorScreen'
 import FindPasswordScreen from './screens/FindPasswordScreen'
@@ -66,6 +67,7 @@ export default function App() {
 
         <Route path="/start" element={<StartScreen />} />
         <Route path="/signup" element={<SignUpScreen />} />
+        <Route path="/verify-email" element={<EmailVerifyScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/login/error" element={<LoginErrorScreen />} />
         <Route path="/login/find" element={<FindPasswordScreen />} />
