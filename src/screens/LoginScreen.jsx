@@ -49,6 +49,11 @@ export default function LoginScreen() {
       await login(email.trim(), pw)
       navigate('/onboarding')
     } catch (e) {
+      // 미인증 계정은 인증 화면으로 안내
+      if (e instanceof ApiError && e.code === 'EMAIL_NOT_VERIFIED') {
+        navigate('/verify-email', { state: { email: email.trim(), password: pw } })
+        return
+      }
       // 자격 증명 오류는 로그인 오류 화면으로, 그 외(네트워크 등)는 알림으로
       if (e instanceof ApiError && (e.status === 401 || e.status === 400)) {
         navigate('/login/error')

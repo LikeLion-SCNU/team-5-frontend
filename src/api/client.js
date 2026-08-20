@@ -18,10 +18,12 @@ export function getRefreshToken() {
 export function saveTokens({ accessToken, refreshToken }) {
   if (accessToken) localStorage.setItem(ACCESS_KEY, accessToken)
   if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+  window.dispatchEvent(new Event('auth-changed'))
 }
 export function clearTokens() {
   localStorage.removeItem(ACCESS_KEY)
   localStorage.removeItem(REFRESH_KEY)
+  window.dispatchEvent(new Event('auth-changed'))
 }
 export function isLoggedIn() {
   return !!getAccessToken()

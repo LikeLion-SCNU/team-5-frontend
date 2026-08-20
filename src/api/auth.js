@@ -1,8 +1,18 @@
 import { api, saveTokens, clearTokens, getRefreshToken } from './client'
 
-/** 이메일 가입 → { userId, message } */
-export function join(email, password) {
-  return api('/auth/join', { method: 'POST', body: { email, password }, auth: false })
+/** 이메일 가입 → { userId, message, verificationRequired } */
+export function join(email, password, name) {
+  return api('/auth/join', { method: 'POST', body: { email, password, name }, auth: false })
+}
+
+/** 이메일 인증 코드 확인 → { verified, message } */
+export function verifyEmail(email, code) {
+  return api('/auth/email/verify', { method: 'POST', body: { email, code }, auth: false })
+}
+
+/** 인증 코드 재전송 → { verified, message } */
+export function resendVerification(email) {
+  return api('/auth/email/resend', { method: 'POST', body: { email }, auth: false })
 }
 
 /** 이메일 로그인 → 토큰 저장 */
@@ -19,7 +29,7 @@ export async function kakaoLogin(code) {
   return tokens
 }
 
-/** 내 정보 → { id, email, role } */
+/** 내 정보 → { id, email, name, role } */
 export function me() {
   return api('/auth/me')
 }

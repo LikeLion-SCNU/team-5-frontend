@@ -32,6 +32,7 @@ const inputBox = {
 /** 회원가입 */
 export default function SignUpScreen() {
   const navigate = useNavigate()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
@@ -42,6 +43,10 @@ export default function SignUpScreen() {
 
   /** 아이디(이메일)·비밀번호는 필수 입력 */
   const submit = async () => {
+    if (!name.trim()) {
+      setAlert('이름을 입력해주세요.')
+      return
+    }
     if (!email.trim() || !pw.trim() || !pw2.trim()) {
       setAlert('이메일과 비밀번호는\n필수 입력 항목입니다.')
       return
@@ -61,7 +66,11 @@ export default function SignUpScreen() {
     if (busy) return
     setBusy(true)
     try {
-      await join(email.trim(), pw)
+      const joined = await join(email.trim(), pw, name.trim())
+      if (joined?.verificationRequired) {
+        navigate('/verify-email', { state: { email: email.trim(), password: pw } })
+        return
+      }
       await login(email.trim(), pw)
       navigate('/privacy')
     } catch (e) {
@@ -84,10 +93,20 @@ export default function SignUpScreen() {
         수명 적립 서비스 회원가입을 시작합니다.
       </span>
 
-      {/* 이메일 */}
-      <span style={{ ...fieldLabel, top: 200 }}>이메일 주소</span>
+      {/* 이름 */}
+      <span style={{ ...fieldLabel, top: 200 }}>이름</span>
       <input
         style={{ ...inputBox, top: 226 }}
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="실명을 입력해주세요"
+      />
+
+      {/* 이메일 */}
+      <span style={{ ...fieldLabel, top: 276 }}>이메일 주소</span>
+      <input
+        style={{ ...inputBox, top: 302 }}
         type="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
@@ -95,9 +114,9 @@ export default function SignUpScreen() {
       />
 
       {/* 비밀번호 */}
-      <span style={{ ...fieldLabel, top: 298 }}>비밀번호</span>
+      <span style={{ ...fieldLabel, top: 352 }}>비밀번호</span>
       <input
-        style={{ ...inputBox, top: 324 }}
+        style={{ ...inputBox, top: 378 }}
         type="password"
         value={pw}
         onChange={(e) => setPw(e.target.value)}
@@ -105,9 +124,9 @@ export default function SignUpScreen() {
       />
 
       {/* 비밀번호 확인 */}
-      <span style={{ ...fieldLabel, top: 396 }}>비밀번호 확인</span>
+      <span style={{ ...fieldLabel, top: 428 }}>비밀번호 확인</span>
       <input
-        style={{ ...inputBox, top: 422 }}
+        style={{ ...inputBox, top: 454 }}
         type="password"
         value={pw2}
         onChange={(e) => setPw2(e.target.value)}
@@ -120,7 +139,7 @@ export default function SignUpScreen() {
         onClick={() => navigate('/privacy')}
         style={{
           position: 'absolute',
-          top: 498,
+          top: 522,
           left: 24,
           width: 345,
           height: 52,
@@ -154,7 +173,7 @@ export default function SignUpScreen() {
         onClick={() => navigate('/login')}
         style={{
           position: 'absolute',
-          top: 580,
+          top: 596,
           left: 0,
           width: 393,
           textAlign: 'center',
