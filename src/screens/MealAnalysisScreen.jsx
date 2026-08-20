@@ -23,6 +23,11 @@ export default function MealAnalysisScreen() {
   // 업로드가 끝나 서버 id가 생길 때까지도 분석 중으로 본다 (실패하면 즉시 해제)
   const [analyzing, setAnalyzing] = useState(!mealUploadFailed)
 
+  /* 새로고침 등으로 분석 대상이 없으면 사진 선택 화면으로 돌아간다 */
+  useEffect(() => {
+    if (!mealPhoto && !mealServerId && !mealUploadFailed) navigate('/meal', { replace: true })
+  }, [])
+
   /* 업로드가 실패하면 분석 대기를 멈추고 재시도를 안내한다 */
   useEffect(() => {
     if (mealUploadFailed) setAnalyzing(false)
@@ -150,11 +155,15 @@ export default function MealAnalysisScreen() {
     <div ref={scrollRef} className="screen screen--full scroll-y">
       {/* 식사 사진 */}
       <div style={{ position: 'relative', width: 393, height: 410 }}>
-        <img
-          src={mealPhoto || '/images/meal.png'}
-          alt="업로드한 식사 사진"
-          style={{ position: 'absolute', top: 0, left: 0, width: 393, height: 410, objectFit: 'cover' }}
-        />
+        {mealPhoto ? (
+          <img
+            src={mealPhoto}
+            alt="업로드한 식사 사진"
+            style={{ position: 'absolute', top: 0, left: 0, width: 393, height: 410, objectFit: 'cover' }}
+          />
+        ) : (
+          <div style={{ position: 'absolute', top: 0, left: 0, width: 393, height: 410, background: 'var(--cream)' }} />
+        )}
 
         {/* AI 인식 태그 — 실제 분석 항목 */}
         {(analyzing
