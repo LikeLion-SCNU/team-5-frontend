@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import BottomNav from '../components/BottomNav'
+import AlertModal from '../components/AlertModal'
 import { IconMoon, IconFootsteps, IconMeal } from '../components/Icons'
 import { useApp } from '../state/AppContext'
 import { getCurrentPlan, generatePlan, decidePlan, regeneratePlan } from '../api/plans'
@@ -32,61 +33,91 @@ function toCard(action, index) {
   }
 }
 
-const CARDS = [
-  { key: 'sleep', title: '수면 30분 늘리기', desc: '생체 리듬 최적화 및 뇌 피로 회복', gain: '+2h', Icon: IconMoon, top: 211, chipLeft: 283, chipWidth: 42 },
-  { key: 'walk', title: '하루 만보 걷기', desc: '심혈관 기능 개선 및 기초 대사 증진', gain: '+1.5h', Icon: IconFootsteps, top: 307, chipLeft: 272, chipWidth: 53 },
-  { key: 'night', title: '일주일에 야식 한 번 줄이기', desc: '수면 중 위장 건강 수호', gain: '+0.5h', Icon: IconMeal, top: 403, chipLeft: 272, chipWidth: 53 },
-]
-
 /** 플랜 — 플랜 수락 전(= 플랜 수정하기를 눌렀을 때 뜨는 화면) */
 export default function PlanEditScreen() {
   const navigate = useNavigate()
   const { setPlanAccepted } = useApp()
 
-  /* 서버 플랜 제안 — 없으면 생성해보고, 실패하면 예시 카드 유지 */
+  /* 서버 플랜 제안 — 적자가 없으면 서버가 알려주는 사유를 그대로 보여준다 */
   const [plan, setPlan] = useState(null)
-  useEffect(() => {
-    if (!isLoggedIn()) return
-    getCurrentPlan()
+  const [notice, setNotice] = useState('플랜을 불러오는 중입니다.')
+  const [busy, setBusy] = useState(false)
+  const [alert, setAlert] = useState('')
+
+  const apply = (pl) => {
+    if (pl?.id && pl.actions?.length) {
+      setPlan(pl)
+      setNotice('')
+      return true
+    }
+    setPlan(null)
+    setNotice(pl?.advisoryCopy || '지금은 제안할 회복 플랜이 없습니다.')
+    return false
+  }
+
+  const load = () => {
+    if (!isLoggedIn()) {
+      setNotice('로그인 후 플랜을 받아볼 수 있습니다.')
+      return Promise.resolve(false)
+    }
+    return getCurrentPlan()
       .then((pl) => {
-        if (pl?.status === 'proposed' || pl?.status === 'accepted') return pl
-        if (pl?.availability === 'NOT_GENERATED' || pl?.availability === 'AVAILABLE') return generatePlan()
-        return pl
+        if (pl?.id && (pl.status === 'proposed' || pl.status === 'accepted')) return pl
+        return generatePlan()
       })
-      .then((pl) => setPlan(pl?.id ? pl : null))
-      .catch(() =>
-        // 아직 제안이 없으면 새로 생성 시도
-        generatePlan().then((pl) => setPlan(pl?.id ? pl : null)).catch(() => {}),
-      )
+      .then(apply)
+      .catch((e) => {
+        setPlan(null)
+        setNotice(e.message || '플랜을 불러오지 못했습니다.')
+        return false
+      })
+  }
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const cards = plan?.actions?.length ? plan.actions.slice(0, 3).map(toCard) : CARDS
+  const cards = plan?.actions?.length ? plan.actions.slice(0, 3).map(toCard) : []
 
   const accept = async () => {
-    if (plan?.id && plan.status === 'proposed') {
-      try {
-        await decidePlan(plan.id, true, plan.version ?? 0)
-      } catch {
-        // 결정 실패해도 화면 흐름은 이어간다
-      }
+    if (!plan?.id) {
+      setAlert(notice || '지금은 수락할 플랜이 없습니다.')
+      return
     }
-    setPlanAccepted(true)
-    navigate('/plan')
+    if (busy) return
+    setBusy(true)
+    try {
+      if (plan.status === 'proposed') {
+        await decidePlan(plan.id, true, plan.version ?? 0)
+      }
+      setPlanAccepted(true)
+      navigate('/plan')
+    } catch (e) {
+      setAlert(e.message || '플랜 수락에 실패했습니다.\n다시 시도해주세요.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const requestNew = async () => {
-    if (plan?.id) {
-      try {
+    if (busy) return
+    setBusy(true)
+    try {
+      if (plan?.id) {
         const next = await regeneratePlan(plan.id, plan.version ?? 0)
-        if (next?.id) {
-          setPlan(next)
-          return
-        }
-      } catch {
-        // 재생성 실패 시 화면 새로고침으로 폴백
+        if (apply(next)) return
+        setAlert(next?.advisoryCopy || '새 플랜을 만들 조건이 아직 아닙니다.')
+        return
       }
+      const created = await generatePlan()
+      if (apply(created)) return
+      setAlert(created?.advisoryCopy || '지금은 제안할 회복 플랜이 없습니다.')
+    } catch (e) {
+      setAlert(e.message || '플랜 요청에 실패했습니다.\n잠시 후 다시 시도해주세요.')
+    } finally {
+      setBusy(false)
     }
-    navigate(0)
   }
 
   return (
@@ -99,6 +130,28 @@ export default function PlanEditScreen() {
       <span style={{ position: 'absolute', top: 155, left: 24, width: 345, fontSize: 14, fontWeight: 500, lineHeight: '21px', color: 'var(--muted)' }}>
         가장 해로운 습관 3가지만 보완해도 매주 기대 수명이 쌓여갑니다.
       </span>
+
+      {cards.length === 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 211,
+            left: 24,
+            width: 345,
+            borderRadius: 16,
+            background: 'var(--white)',
+            boxShadow: 'var(--shadow-card)',
+            padding: '28px 24px',
+            textAlign: 'center',
+            fontSize: 14,
+            fontWeight: 500,
+            lineHeight: '22px',
+            color: 'var(--muted)',
+          }}
+        >
+          {notice}
+        </div>
+      )}
 
       {cards.map(({ key, title, desc, gain, Icon, top, chipLeft, chipWidth }) => (
         <div
@@ -163,8 +216,8 @@ export default function PlanEditScreen() {
           width: 345,
           height: 56,
           borderRadius: 16,
-          background: 'var(--brown)',
-          color: 'var(--white)',
+          background: cards.length ? 'var(--brown)' : 'var(--beige-2)',
+          color: cards.length ? 'var(--white)' : 'var(--muted)',
           fontSize: 16,
           fontWeight: 700,
         }}
@@ -186,8 +239,10 @@ export default function PlanEditScreen() {
           color: 'var(--muted)',
         }}
       >
-        새로운 플랜 요청하기
+        {busy ? '요청 중...' : '새로운 플랜 요청하기'}
       </button>
+
+      <AlertModal open={!!alert} message={alert} onClose={() => setAlert('')} />
 
       <BottomNav active="plan" />
     </div>
