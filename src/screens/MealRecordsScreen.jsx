@@ -12,6 +12,10 @@ export default function MealRecordsScreen() {
   const goBack = useGoBack('/meal')
   const { displayDelta, protectionMode, mealRecords } = useApp()
 
+  /* 오늘 확정한 식단들의 실제 환산 합계 ('+1.2h' 형태 문자열을 시간 단위로 합산) */
+  const totalHours = mealRecords.reduce((sum, r) => sum + (parseFloat(r.delta) || 0), 0)
+  const totalText = mealRecords.length > 0 ? `${totalHours >= 0 ? '+' : '-'}${Math.abs(totalHours).toFixed(1)}h` : '0h'
+
   return (
     <div className="screen">
       {/* 헤더 */}
@@ -133,7 +137,9 @@ export default function MealRecordsScreen() {
         <span style={{ position: 'absolute', top: 18, left: 24, fontSize: 14, fontWeight: 700, color: 'var(--white)' }}>
           오늘의 총 환산 수명
         </span>
-        <span style={{ position: 'absolute', top: 16, right: 24, fontSize: 18, fontWeight: 900, color: 'var(--white)' }}>+0.2h</span>
+        <span style={{ position: 'absolute', top: 16, right: 24, fontSize: 18, fontWeight: 900, color: 'var(--white)' }}>
+          {displayDelta(totalText)}
+        </span>
       </div>
 
       <BottomNav active="meal" />

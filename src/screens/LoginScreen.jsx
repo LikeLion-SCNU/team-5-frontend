@@ -111,56 +111,6 @@ export default function LoginScreen() {
         로그인
       </button>
 
-      <button
-        className="pressable"
-        onClick={() => navigate('/onboarding')}
-        style={{
-          position: 'absolute',
-          top: 499,
-          left: 24,
-          width: 345,
-          height: 52,
-          borderRadius: 12,
-          background: 'var(--kakao)',
-        }}
-      >
-        <img
-          src="/images/kakao.png"
-          alt="카카오톡"
-          style={{ position: 'absolute', top: 4, left: 12, width: 44, height: 44 }}
-        />
-        <span
-          style={{
-            position: 'absolute',
-            top: 16,
-            left: 16,
-            width: 313,
-            textAlign: 'center',
-            fontSize: 14,
-            fontWeight: 700,
-            color: 'var(--ink)',
-          }}
-        >
-          카카오톡으로 연결하기
-        </span>
-      </button>
-
-      <button
-        className="pressable"
-        onClick={() => navigate('/login/find')}
-        style={{
-          position: 'absolute',
-          top: 575,
-          left: 153,
-          width: 86,
-          fontSize: 14,
-          fontWeight: 500,
-          color: 'var(--muted)',
-        }}
-      >
-        비밀번호 찾기
-      </button>
-
       <AlertModal open={!!alert} message={alert} onClose={() => setAlert('')} />
 
       {/* 헤더는 알림창보다 위에 그려서 " < " 한 번에 뒤로 갈 수 있게 한다 */}
