@@ -14,16 +14,20 @@ function today() {
 /** 오늘의 식탁 기록 — 사진 업로드 */
 export default function MealScreen() {
   const navigate = useNavigate()
-  const { hasMealRecords, mealPhoto, setMealPhoto, setMealServerId } = useApp()
+  const { hasMealRecords, mealPhoto, setMealPhoto, setMealServerId, setMealItems, setMealUploadFailed } = useApp()
 
   const pick = (dataUrl, file) => {
     setMealPhoto(dataUrl)
     setMealServerId(null)
-    // 로그인 상태면 서버에 업로드해 AI 분석을 시작한다 (실패해도 화면 흐름은 계속)
+    setMealItems([])
+    // 서버에 업로드해 AI 분석을 시작한다 (실패하면 분석 화면에서 재시도를 안내)
     if (isLoggedIn() && file) {
+      setMealUploadFailed(false)
       uploadAndCreateMeal(file, today())
         .then(({ mealId }) => setMealServerId(mealId))
-        .catch(() => {})
+        .catch(() => setMealUploadFailed(true))
+    } else {
+      setMealUploadFailed(true)
     }
     navigate('/meal/analysis')
   }

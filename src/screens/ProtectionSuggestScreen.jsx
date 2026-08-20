@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getProtectionStatus, setProtectionMode as apiSetProtectionMode, acceptProtectionProposal, rejectProtectionProposal } from '../api/protection'
 import { isLoggedIn } from '../api/client'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { IconShield } from '../components/Icons'
 import { useApp } from '../state/AppContext'
@@ -12,14 +12,15 @@ import { useApp } from '../state/AppContext'
  */
 export default function ProtectionSuggestScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { setProtectionMode } = useApp()
 
-  /* 서버가 띄운 보호 모드 제안 id (있으면 응답을 서버에도 기록) */
-  const [proposalId, setProposalId] = useState(null)
+  /* 서버가 띄운 보호 모드 제안 id — 홈에서 전달받고, 없으면 상태 API로 조회한다 */
+  const [proposalId, setProposalId] = useState(location.state?.proposalId ?? null)
   useEffect(() => {
     if (!isLoggedIn()) return
     getProtectionStatus()
-      .then((st) => setProposalId(st.activeProposal?.id ?? null))
+      .then((st) => setProposalId((cur) => cur ?? st.activeProposal?.id ?? null))
       .catch(() => {})
   }, [])
 

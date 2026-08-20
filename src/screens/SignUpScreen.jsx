@@ -133,41 +133,6 @@ export default function SignUpScreen() {
         placeholder="비밀번호를 한번 더 입력해 주세요"
       />
 
-      {/* 소셜/이메일 연결 */}
-      <button
-        className="pressable"
-        onClick={() => navigate('/privacy')}
-        style={{
-          position: 'absolute',
-          top: 522,
-          left: 24,
-          width: 345,
-          height: 52,
-          borderRadius: 12,
-          background: 'var(--kakao)',
-        }}
-      >
-        <img
-          src="/images/kakao.png"
-          alt="카카오톡"
-          style={{ position: 'absolute', top: 4, left: 12, width: 44, height: 44 }}
-        />
-        <span
-          style={{
-            position: 'absolute',
-            top: 16,
-            left: 16,
-            width: 313,
-            textAlign: 'center',
-            fontSize: 14,
-            fontWeight: 700,
-            color: 'var(--ink)',
-          }}
-        >
-          카카오톡으로 시작하기
-        </span>
-      </button>
-
       <button
         className="pressable"
         onClick={() => navigate('/login')}

@@ -1,23 +1,47 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
+import AlertModal from '../components/AlertModal'
 import { IconAlertTriangle, IconCheck } from '../components/Icons'
 import { useApp } from '../state/AppContext'
+import { getDataSummary, deleteAccount } from '../api/account'
+import { logout } from '../api/auth'
 
-/** 설정 - 데이터 관리 - 데이터 삭제 확인 화면 */
+/** 설정 - 데이터 관리 - 계정 및 전체 데이터 삭제 (실제 탈퇴) */
 export default function SettingsDataDeleteScreen() {
   const navigate = useNavigate()
   const [agreed, setAgreed] = useState(false)
-  const { setHasData, setHasMealRecords, setPlanAccepted, setFaceSimDone } = useApp()
+  const [balanceText, setBalanceText] = useState('누적된 수명 잔고')
+  const [alert, setAlert] = useState('')
+  const [busy, setBusy] = useState(false)
+  const { setHasData, setHasMealRecords, setPlanAccepted, setFaceSimDone, setMealRecords } = useApp()
 
-  const confirmDelete = () => {
-    if (!agreed) return
-    // 하드 삭제: 기록·시뮬레이션 결과 제거 후 초기 상태로
-    setHasData(false)
-    setHasMealRecords(false)
-    setPlanAccepted(false)
-    setFaceSimDone(false)
-    navigate('/home-empty')
+  useEffect(() => {
+    getDataSummary()
+      .then((d) => {
+        const minutes = d?.balanceMinutes ?? 0
+        const hours = (Math.abs(minutes) / 60).toFixed(1)
+        setBalanceText(`누적된 수명 잔고 ${minutes < 0 ? '-' : ''}${hours}시간`)
+      })
+      .catch(() => {})
+  }, [])
+
+  const confirmDelete = async () => {
+    if (!agreed || busy) return
+    setBusy(true)
+    try {
+      await deleteAccount()
+      setHasData(false)
+      setHasMealRecords(false)
+      setMealRecords([])
+      setPlanAccepted(false)
+      setFaceSimDone(false)
+      await logout().catch(() => {})
+      navigate('/start', { replace: true })
+    } catch (e) {
+      setAlert(e.message || '삭제에 실패했어요.\n잠시 후 다시 시도해주세요.')
+      setBusy(false)
+    }
   }
 
   return (
@@ -82,7 +106,7 @@ export default function SettingsDataDeleteScreen() {
             color: 'var(--muted)',
           }}
         >
-          삭제된 데이터는 복구할 수 없으며, 누적된 수명 잔고 12,540시간이 영구 소멸됩니다.
+          삭제된 데이터는 복구할 수 없으며, {balanceText}가 영구 소멸됩니다.
         </span>
 
         <button
@@ -153,6 +177,7 @@ export default function SettingsDataDeleteScreen() {
         </button>
       </div>
 
+      <AlertModal open={!!alert} message={alert} onClose={() => setAlert('')} />
     </div>
   )
 }
