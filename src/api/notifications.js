@@ -1,16 +1,32 @@
-import { api } from './client'
+import { api, ApiError } from './client'
+import { grantConsent } from './consents'
+
+/** 서버가 'HH:mm:ss'로 돌려줘도 요청은 'HH:mm'만 받으므로 잘라서 쓴다 */
+export function toHHmm(time) {
+  return String(time ?? '').slice(0, 5)
+}
 
 /** 아침 명세서 알림 설정 조회 → { enabled, timezone, morningTime("HH:mm") } */
 export function getNotificationPreference() {
   return api('/notifications/preference')
 }
 
-/** 아침 명세서 알림 설정 변경 */
-export function updateNotificationPreference(enabled, morningTime) {
-  return api('/notifications/preference', {
-    method: 'PUT',
-    body: { enabled, timezone: 'Asia/Seoul', morningTime },
-  })
+/** 아침 명세서 알림 설정 변경 — NOTIFICATION 동의가 없으면(403) 등록 후 재시도 */
+export async function updateNotificationPreference(enabled, morningTime) {
+  const put = () =>
+    api('/notifications/preference', {
+      method: 'PUT',
+      body: { enabled, timezone: 'Asia/Seoul', morningTime: toHHmm(morningTime) },
+    })
+  try {
+    return await put()
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 403) {
+      await grantConsent('NOTIFICATION')
+      return put()
+    }
+    throw e
+  }
 }
 
 /** VAPID 공개키 */

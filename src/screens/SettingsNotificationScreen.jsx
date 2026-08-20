@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { useEffect } from 'react'
 import Toggle from '../components/Toggle'
-import { getNotificationPreference, updateNotificationPreference, subscribePush } from '../api/notifications'
+import { getNotificationPreference, updateNotificationPreference, subscribePush, toHHmm } from '../api/notifications'
 import { isLoggedIn } from '../api/client'
 import TimeWheel from '../components/TimeWheel'
 import { useApp } from '../state/AppContext'
@@ -16,7 +16,7 @@ export default function SettingsNotificationScreen() {
   useEffect(() => {
     if (!isLoggedIn()) return
     getNotificationPreference()
-      .then((pref) => setNotify((n) => ({ ...n, morning: pref.enabled, morningTime: pref.morningTime ?? n.morningTime })))
+      .then((pref) => setNotify((n) => ({ ...n, morning: pref.enabled, morningTime: pref.morningTime ? toHHmm(pref.morningTime) : n.morningTime })))
       .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

@@ -5,6 +5,7 @@ const CONSENT_TEXT = {
   MEAL_AI: '시간은행 식사 사진 AI 분석을 위한 이미지 처리에 동의합니다. (v1)',
   FACE_AI: '시간은행 미래 얼굴 시뮬레이션을 위한 얼굴 이미지 처리에 동의합니다. (v1)',
   HEALTH_COLLECTION: '시간은행 건강 데이터(수면·걸음·스크린타임) 수집에 동의합니다. (v1)',
+  NOTIFICATION: '시간은행 아침 명세서·미션 푸시 알림 수신에 동의합니다. (v1)',
 }
 const CONSENT_VERSION = 1
 
