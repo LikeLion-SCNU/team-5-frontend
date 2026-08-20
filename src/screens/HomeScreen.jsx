@@ -44,7 +44,7 @@ export default function HomeScreen() {
 
       {/* 헤더 */}
       <div style={{ position: 'absolute', top: 44, left: 0, width: 393, height: 56 }}>
-        <span style={{ position: 'absolute', top: 16, left: 109, width: 175, fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>
+        <span style={{ position: 'absolute', top: 16, left: 24, width: 280, fontSize: 18, fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {displayName ?? userName}님, 안녕하세요
         </span>
         <button
